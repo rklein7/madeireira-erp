@@ -1,0 +1,44 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# VS Code
+.vscode/
+
+# Spring Boot
+spring-shell.log
+*.log
+logs/
+
+# Variáveis de ambiente e segredos — CRÍTICO
+.env
+.env.local
+.env.production
+application-local.yml
+application-prod.yml
+application-secrets.yml
+application.yml
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
