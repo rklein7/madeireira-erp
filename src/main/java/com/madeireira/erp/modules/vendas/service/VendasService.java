@@ -6,6 +6,7 @@ import com.madeireira.erp.modules.cadastro.repository.ProdutoRepository;
 import com.madeireira.erp.modules.estoque.dto.MovimentoEstoqueDTO;
 import com.madeireira.erp.modules.estoque.entity.TipoMovimento;
 import com.madeireira.erp.modules.estoque.service.EstoqueService;
+import com.madeireira.erp.modules.financeiro.service.FinanceiroService;
 import com.madeireira.erp.modules.vendas.dto.PedidoDTO;
 import com.madeireira.erp.modules.vendas.entity.ItemPedido;
 import com.madeireira.erp.modules.vendas.entity.Pedido;
@@ -33,6 +34,7 @@ public class VendasService {
     private final ClienteRepository clienteRepository;
     private final ProdutoRepository produtoRepository;
     private final EstoqueService estoqueService;
+    private final FinanceiroService financeiroService;
 
     @Transactional
     public PedidoDTO.Response criar(PedidoDTO.Request request) {
@@ -120,7 +122,9 @@ public class VendasService {
         }
 
         pedido.setStatus(StatusPedido.FATURADO);
-        return toResponse(pedidoRepository.save(pedido));
+        Pedido salvo = pedidoRepository.save(pedido);
+        financeiroService.gerarContasReceberDoPedido(salvo.getId());
+        return toResponse(salvo);
     }
 
     @Transactional
