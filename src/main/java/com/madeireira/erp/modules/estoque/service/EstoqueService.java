@@ -52,8 +52,8 @@ public class EstoqueService {
 
         BigDecimal novoSaldo = switch (request.getTipo()) {
             case ENTRADA_MANUAL -> estoqueAtual.add(quantidade);
-            case SAIDA_MANUAL   -> estoqueAtual.subtract(quantidade);
-            case AJUSTE         -> quantidade; // quantidade = novo saldo absoluto
+            case SAIDA_MANUAL, SAIDA_PEDIDO -> estoqueAtual.subtract(quantidade);
+            case AJUSTE -> quantidade; // quantidade = novo saldo absoluto
         };
 
         produto.setEstoqueAtual(novoSaldo);

@@ -9,6 +9,7 @@ public enum TipoMovimento {
 
     ENTRADA_MANUAL("Entrada manual", true),
     SAIDA_MANUAL("Saída manual", false),
+    SAIDA_PEDIDO("Saída por pedido de venda", false),
     AJUSTE("Ajuste de inventário", null);
 
     private final String descricao;
