@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum TipoMovimento {
 
     ENTRADA_MANUAL("Entrada manual", true),
+    ENTRADA_NF("Entrada por nota fiscal", true),
     SAIDA_MANUAL("Saída manual", false),
     SAIDA_PEDIDO("Saída por pedido de venda", false),
     AJUSTE("Ajuste de inventário", null);
