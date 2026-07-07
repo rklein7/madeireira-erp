@@ -16,6 +16,8 @@ public interface ContaPagarRepository extends JpaRepository<ContaPagar, UUID> {
 
     Page<ContaPagar> findByStatus(StatusConta status, Pageable pageable);
 
+    List<ContaPagar> findByStatus(StatusConta status);
+
     List<ContaPagar> findByFornecedorId(UUID fornecedorId);
 
     List<ContaPagar> findByDataVencimentoBetween(LocalDate de, LocalDate ate);

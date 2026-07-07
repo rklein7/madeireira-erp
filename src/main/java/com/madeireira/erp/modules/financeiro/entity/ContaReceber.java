@@ -55,6 +55,12 @@ public class ContaReceber extends BaseEntity {
     @Builder.Default
     private Integer totalParcelas = 1;
 
+    @Column(name = "codigo_banco", length = 10)
+    private String codigoBanco;
+
+    @Column(name = "nome_banco", length = 100)
+    private String nomeBanco;
+
     @Column(columnDefinition = "TEXT")
     private String observacoes;
 

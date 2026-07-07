@@ -19,6 +19,8 @@ public interface ContaReceberRepository extends JpaRepository<ContaReceber, UUID
 
     Page<ContaReceber> findByStatus(StatusConta status, Pageable pageable);
 
+    List<ContaReceber> findByStatus(StatusConta status);
+
     Page<ContaReceber> findByClienteIdAndStatus(UUID clienteId, StatusConta status, Pageable pageable);
 
     List<ContaReceber> findByPedidoId(UUID pedidoId);

@@ -51,6 +51,9 @@ public class ContaPagarDTO {
         private StatusConta status;
         private FormaPagamento formaPagamento;
 
+        private String codigoBanco;
+        private String nomeBanco;
+
         private String documento;
         private String observacoes;
         private boolean vencida;
@@ -69,6 +72,9 @@ public class ContaPagarDTO {
 
         @NotNull(message = "Forma de pagamento é obrigatória")
         private FormaPagamento formaPagamento;
+
+        private String codigoBanco;
+        private String nomeBanco;
 
         private String observacoes;
     }

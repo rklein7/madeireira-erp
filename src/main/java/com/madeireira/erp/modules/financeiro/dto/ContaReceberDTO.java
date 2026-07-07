@@ -32,6 +32,9 @@ public class ContaReceberDTO {
         private StatusConta status;
         private FormaPagamento formaPagamento;
 
+        private String codigoBanco;
+        private String nomeBanco;
+
         private Integer parcela;
         private Integer totalParcelas;
 
@@ -66,6 +69,9 @@ public class ContaReceberDTO {
 
         @NotNull(message = "Forma de pagamento é obrigatória")
         private FormaPagamento formaPagamento;
+
+        private String codigoBanco;
+        private String nomeBanco;
 
         private String observacoes;
     }

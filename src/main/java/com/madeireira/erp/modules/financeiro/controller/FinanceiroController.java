@@ -2,6 +2,7 @@ package com.madeireira.erp.modules.financeiro.controller;
 
 import com.madeireira.erp.modules.financeiro.dto.ContaPagarDTO;
 import com.madeireira.erp.modules.financeiro.dto.ContaReceberDTO;
+import com.madeireira.erp.modules.financeiro.dto.FinanceiroDTO;
 import com.madeireira.erp.modules.financeiro.dto.FluxoCaixaDTO;
 import com.madeireira.erp.modules.financeiro.entity.StatusConta;
 import com.madeireira.erp.modules.financeiro.service.FinanceiroService;
@@ -162,6 +163,22 @@ public class FinanceiroController {
             @PathVariable UUID id,
             @Valid @RequestBody ContaPagarDTO.PagarRequest request) {
         return ResponseEntity.ok(financeiroService.registrarPagamentoPagar(id, request));
+    }
+
+    // -------------------------------------------------------------------------
+    // Lançamentos consolidados
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/lancamentos")
+    @Operation(summary = "Histórico de lançamentos financeiros efetivados (pagamentos e recebimentos)")
+    public ResponseEntity<Page<FinanceiroDTO.LancamentoResponse>> listarLancamentos(
+            @RequestParam(required = false) String tipo,
+            @RequestParam(required = false) String codigoBanco,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate,
+            @PageableDefault(size = 20, sort = "data", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(
+                financeiroService.listarLancamentos(tipo, codigoBanco, de, ate, pageable));
     }
 
     // -------------------------------------------------------------------------

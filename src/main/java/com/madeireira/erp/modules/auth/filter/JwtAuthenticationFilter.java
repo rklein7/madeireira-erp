@@ -32,6 +32,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        // Sem token: passa adiante. Rotas públicas são permitidas pelo SecurityConfig;
+        // rotas protegidas recebem 401 via AuthenticationEntryPoint.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -43,20 +45,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             email = jwtService.extractEmail(token);
         } catch (Exception e) {
-            filterChain.doFilter(request, response);
+            sendUnauthorized(response, "Token inválido ou expirado");
             return;
         }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (email == null) {
+            sendUnauthorized(response, "Token sem subject");
+            return;
+        }
+
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            if (jwtService.isTokenValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            if (!jwtService.isTokenValid(token, userDetails)) {
+                sendUnauthorized(response, "Token inválido");
+                return;
             }
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities());
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+                "{\"error\":\"" + message + "\",\"status\":401}");
     }
 }

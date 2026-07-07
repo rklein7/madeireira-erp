@@ -4,6 +4,7 @@ import com.madeireira.erp.modules.cadastro.repository.ClienteRepository;
 import com.madeireira.erp.modules.cadastro.repository.FornecedorRepository;
 import com.madeireira.erp.modules.financeiro.dto.ContaPagarDTO;
 import com.madeireira.erp.modules.financeiro.dto.ContaReceberDTO;
+import com.madeireira.erp.modules.financeiro.dto.FinanceiroDTO;
 import com.madeireira.erp.modules.financeiro.dto.FluxoCaixaDTO;
 import com.madeireira.erp.modules.financeiro.entity.ContaPagar;
 import com.madeireira.erp.modules.financeiro.entity.ContaReceber;
@@ -16,6 +17,7 @@ import com.madeireira.erp.shared.exception.BusinessException;
 import com.madeireira.erp.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -105,6 +108,8 @@ public class FinanceiroService {
         conta.setDataPagamento(req.getDataPagamento());
         conta.setValorPago(req.getValorPago());
         conta.setFormaPagamento(req.getFormaPagamento());
+        conta.setCodigoBanco(req.getCodigoBanco());
+        conta.setNomeBanco(req.getNomeBanco());
         conta.setStatus(StatusConta.PAGO);
         if (req.getObservacoes() != null) {
             conta.setObservacoes(req.getObservacoes());
@@ -168,6 +173,8 @@ public class FinanceiroService {
         conta.setDataPagamento(req.getDataPagamento());
         conta.setValorPago(req.getValorPago());
         conta.setFormaPagamento(req.getFormaPagamento());
+        conta.setCodigoBanco(req.getCodigoBanco());
+        conta.setNomeBanco(req.getNomeBanco());
         conta.setStatus(StatusConta.PAGO);
         if (req.getObservacoes() != null) {
             conta.setObservacoes(req.getObservacoes());
@@ -186,6 +193,47 @@ public class FinanceiroService {
     }
 
     // -------------------------------------------------------------------------
+    // Lançamentos consolidados (recebimentos + pagamentos efetivados)
+    // -------------------------------------------------------------------------
+
+    @Transactional(readOnly = true)
+    public Page<FinanceiroDTO.LancamentoResponse> listarLancamentos(
+            String tipo, String codigoBanco, LocalDate de, LocalDate ate, Pageable pageable) {
+
+        boolean incluirRecebimentos = tipo == null || "RECEBIMENTO".equalsIgnoreCase(tipo);
+        boolean incluirPagamentos   = tipo == null || "PAGAMENTO".equalsIgnoreCase(tipo);
+
+        List<FinanceiroDTO.LancamentoResponse> lancamentos = new ArrayList<>();
+
+        if (incluirRecebimentos) {
+            contaReceberRepository.findByStatus(StatusConta.PAGO).stream()
+                    .filter(c -> codigoBanco == null || codigoBanco.equals(c.getCodigoBanco()))
+                    .filter(c -> de  == null || !c.getDataPagamento().isBefore(de))
+                    .filter(c -> ate == null || !c.getDataPagamento().isAfter(ate))
+                    .map(this::toLancamentoRecebimento)
+                    .forEach(lancamentos::add);
+        }
+
+        if (incluirPagamentos) {
+            contaPagarRepository.findByStatus(StatusConta.PAGO).stream()
+                    .filter(c -> codigoBanco == null || codigoBanco.equals(c.getCodigoBanco()))
+                    .filter(c -> de  == null || !c.getDataPagamento().isBefore(de))
+                    .filter(c -> ate == null || !c.getDataPagamento().isAfter(ate))
+                    .map(this::toLancamentoPagamento)
+                    .forEach(lancamentos::add);
+        }
+
+        lancamentos.sort(Comparator.comparing(FinanceiroDTO.LancamentoResponse::getData).reversed());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), lancamentos.size());
+        List<FinanceiroDTO.LancamentoResponse> pageContent =
+                start >= lancamentos.size() ? List.of() : lancamentos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, lancamentos.size());
+    }
+
+    // -------------------------------------------------------------------------
     // Fluxo de Caixa
     // -------------------------------------------------------------------------
 
@@ -194,19 +242,18 @@ public class FinanceiroService {
         List<ContaReceber> entradas = contaReceberRepository.findByDataVencimentoBetween(de, ate);
         List<ContaPagar> saidas = contaPagarRepository.findByDataVencimentoBetween(de, ate);
 
-        // TreeMap garante ordem cronológica automática
         Map<YearMonth, BigDecimal[]> meses = new TreeMap<>();
 
         for (ContaReceber cr : entradas) {
             YearMonth mes = YearMonth.from(cr.getDataVencimento());
             meses.computeIfAbsent(mes, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
-            meses.get(mes)[0] = meses.get(mes)[0].add(cr.getValor()); // entrada
+            meses.get(mes)[0] = meses.get(mes)[0].add(cr.getValor());
         }
 
         for (ContaPagar cp : saidas) {
             YearMonth mes = YearMonth.from(cp.getDataVencimento());
             meses.computeIfAbsent(mes, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
-            meses.get(mes)[1] = meses.get(mes)[1].add(cp.getValor()); // saída
+            meses.get(mes)[1] = meses.get(mes)[1].add(cp.getValor());
         }
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -262,6 +309,8 @@ public class FinanceiroService {
                 .valorPago(c.getValorPago())
                 .status(c.getStatus())
                 .formaPagamento(c.getFormaPagamento())
+                .codigoBanco(c.getCodigoBanco())
+                .nomeBanco(c.getNomeBanco())
                 .parcela(c.getParcela())
                 .totalParcelas(c.getTotalParcelas())
                 .observacoes(c.getObservacoes())
@@ -296,10 +345,44 @@ public class FinanceiroService {
                 .valorPago(c.getValorPago())
                 .status(c.getStatus())
                 .formaPagamento(c.getFormaPagamento())
+                .codigoBanco(c.getCodigoBanco())
+                .nomeBanco(c.getNomeBanco())
                 .documento(c.getDocumento())
                 .observacoes(c.getObservacoes())
                 .vencida(c.isVencida())
                 .criadoEm(c.getCriadoEm())
+                .build();
+    }
+
+    private FinanceiroDTO.LancamentoResponse toLancamentoRecebimento(ContaReceber c) {
+        return FinanceiroDTO.LancamentoResponse.builder()
+                .id(c.getId())
+                .tipo("RECEBIMENTO")
+                .data(c.getDataPagamento())
+                .descricao(c.getDescricao())
+                .valor(c.getValor())
+                .valorPago(c.getValorPago())
+                .codigoBanco(c.getCodigoBanco())
+                .nomeBanco(c.getNomeBanco())
+                .formaPagamento(c.getFormaPagamento())
+                .clienteNome(c.getCliente() != null ? c.getCliente().getRazaoSocial() : null)
+                .origem("CONTA_RECEBER")
+                .build();
+    }
+
+    private FinanceiroDTO.LancamentoResponse toLancamentoPagamento(ContaPagar c) {
+        return FinanceiroDTO.LancamentoResponse.builder()
+                .id(c.getId())
+                .tipo("PAGAMENTO")
+                .data(c.getDataPagamento())
+                .descricao(c.getDescricao())
+                .valor(c.getValor())
+                .valorPago(c.getValorPago())
+                .codigoBanco(c.getCodigoBanco())
+                .nomeBanco(c.getNomeBanco())
+                .formaPagamento(c.getFormaPagamento())
+                .fornecedorNome(c.getFornecedor() != null ? c.getFornecedor().getRazaoSocial() : null)
+                .origem("CONTA_PAGAR")
                 .build();
     }
 }

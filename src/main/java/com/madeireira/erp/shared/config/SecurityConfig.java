@@ -22,6 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @Configuration
@@ -30,10 +31,6 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ROUTES = {
             "/api/v1/auth/**",
-            "/api/v1/estoque/**",
-            "/api/v1/pedidos/**",
-            "/api/v1/financeiro/**",
-            "/api/v1/fiscal/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api-docs/**",
@@ -52,6 +49,13 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authProvider)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, e) -> {
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json;charset=UTF-8");
+                    res.getWriter().write("{\"error\":\"Autenticação necessária\",\"status\":401}");
+                })
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_ROUTES).permitAll()
                 .anyRequest().authenticated()
