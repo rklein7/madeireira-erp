@@ -46,8 +46,9 @@ public class VendasController {
     public ResponseEntity<Page<PedidoDTO.Resumo>> listar(
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) StatusPedido status,
+            @RequestParam(required = false) Boolean semNfVinculada,
             @PageableDefault(size = 20, sort = "criadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(vendasService.listar(clienteId, status, pageable));
+        return ResponseEntity.ok(vendasService.listar(clienteId, status, semNfVinculada, pageable));
     }
 
     @GetMapping("/{id}")

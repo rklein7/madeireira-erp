@@ -176,9 +176,14 @@ public class VendasService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PedidoDTO.Resumo> listar(UUID clienteId, StatusPedido status, Pageable pageable) {
-        Page<Pedido> page;
+    public Page<PedidoDTO.Resumo> listar(
+            UUID clienteId, StatusPedido status, Boolean semNfVinculada, Pageable pageable) {
 
+        if (Boolean.TRUE.equals(semNfVinculada)) {
+            return pedidoRepository.findFaturadosSemNfVinculada(pageable).map(this::toResumo);
+        }
+
+        Page<Pedido> page;
         if (clienteId != null && status != null) {
             page = pedidoRepository.findByClienteIdAndStatus(clienteId, status, pageable);
         } else if (clienteId != null) {

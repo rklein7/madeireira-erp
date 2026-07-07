@@ -19,4 +19,12 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     Page<Pedido> findByStatus(StatusPedido status, Pageable pageable);
 
     Page<Pedido> findByClienteIdAndStatus(UUID clienteId, StatusPedido status, Pageable pageable);
+
+    @Query("SELECT p FROM Pedido p WHERE p.status = com.madeireira.erp.modules.vendas.entity.StatusPedido.FATURADO " +
+           "AND NOT EXISTS (" +
+           "  SELECT nf FROM com.madeireira.erp.modules.fiscal.entity.NotaFiscal nf " +
+           "  WHERE nf.pedido.id = p.id " +
+           "  AND nf.status <> com.madeireira.erp.modules.fiscal.entity.StatusNF.CANCELADA" +
+           ")")
+    Page<Pedido> findFaturadosSemNfVinculada(Pageable pageable);
 }
