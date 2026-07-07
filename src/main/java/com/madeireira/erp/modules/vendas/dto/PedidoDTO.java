@@ -36,6 +36,9 @@ public class PedidoDTO {
         @NotNull(message = "Cliente é obrigatório")
         private UUID clienteId;
 
+        /** Opcional — pedido pode ser criado sem vendedor vinculado */
+        private UUID vendedorId;
+
         @NotNull(message = "Condição de pagamento é obrigatória")
         private CondicaoPagamento condicaoPagamento;
 
@@ -82,6 +85,17 @@ public class PedidoDTO {
         private UUID clienteId;
         private String clienteNome;
         private String clienteCpfCnpj;
+        private String clienteEndereco;
+        private String clienteBairro;
+        private String clienteCidade;
+        private String clienteUf;
+        private String clienteCep;
+        private String clienteTelefone;
+        private String clienteEmail;
+        private String clienteIe;
+
+        private UUID vendedorId;
+        private String vendedorNome;
 
         private BigDecimal valorSubtotal;
         private BigDecimal valorDesconto;
@@ -104,6 +118,7 @@ public class PedidoDTO {
         private String numero;
         private StatusPedido status;
         private String clienteNome;
+        private String vendedorNome;
         private CondicaoPagamento condicaoPagamento;
 
         private BigDecimal valorTotal;

@@ -1,5 +1,6 @@
 package com.madeireira.erp.modules.vendas.service;
 
+import com.madeireira.erp.modules.auth.repository.UsuarioRepository;
 import com.madeireira.erp.modules.cadastro.entity.Produto;
 import com.madeireira.erp.modules.cadastro.repository.ClienteRepository;
 import com.madeireira.erp.modules.cadastro.repository.ProdutoRepository;
@@ -33,6 +34,7 @@ public class VendasService {
     private final ItemPedidoRepository itemPedidoRepository;
     private final ClienteRepository clienteRepository;
     private final ProdutoRepository produtoRepository;
+    private final UsuarioRepository usuarioRepository;
     private final EstoqueService estoqueService;
     private final FinanceiroService financeiroService;
 
@@ -53,6 +55,13 @@ public class VendasService {
                 .observacoes(request.getObservacoes())
                 .status(StatusPedido.RASCUNHO)
                 .build();
+
+        if (request.getVendedorId() != null) {
+            var vendedor = usuarioRepository.findById(request.getVendedorId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Vendedor não encontrado: " + request.getVendedorId()));
+            pedido.setVendedor(vendedor);
+        }
 
         List<ItemPedido> itens = request.getItens().stream().map(itemReq -> {
             Produto produto = produtoRepository.findById(itemReq.getProdutoId())
@@ -207,6 +216,20 @@ public class VendasService {
                 .clienteId(p.getCliente().getId())
                 .clienteNome(p.getCliente().getRazaoSocial())
                 .clienteCpfCnpj(p.getCliente().getCpfCnpj())
+                .clienteEndereco(p.getCliente().getLogradouro() != null
+                        ? p.getCliente().getLogradouro() + ", " + p.getCliente().getNumero()
+                        : null)
+                .clienteBairro(p.getCliente().getBairro())
+                .clienteCidade(p.getCliente().getCidade())
+                .clienteUf(p.getCliente().getUf())
+                .clienteCep(p.getCliente().getCep())
+                .clienteTelefone(p.getCliente().getTelefone() != null
+                        ? p.getCliente().getTelefone()
+                        : p.getCliente().getCelular())
+                .clienteEmail(p.getCliente().getEmail())
+                .clienteIe(p.getCliente().getIe())
+                .vendedorId(p.getVendedor() != null ? p.getVendedor().getId() : null)
+                .vendedorNome(p.getVendedor() != null ? p.getVendedor().getNome() : null)
                 .valorSubtotal(p.getValorSubtotal())
                 .valorDesconto(p.getValorDesconto())
                 .valorFrete(p.getValorFrete())
@@ -240,6 +263,7 @@ public class VendasService {
                 .numero(p.getNumero())
                 .status(p.getStatus())
                 .clienteNome(p.getCliente().getRazaoSocial())
+                .vendedorNome(p.getVendedor() != null ? p.getVendedor().getNome() : null)
                 .condicaoPagamento(p.getCondicaoPagamento())
                 .valorTotal(p.getValorTotal())
                 .totalItens(p.getItens().size())
