@@ -3,6 +3,9 @@ package com.madeireira.erp.modules.fiscal.service;
 import com.madeireira.erp.modules.cadastro.repository.ClienteRepository;
 import com.madeireira.erp.modules.cadastro.repository.FornecedorRepository;
 import com.madeireira.erp.modules.cadastro.repository.ProdutoRepository;
+import com.madeireira.erp.modules.compras.entity.PedidoCompra;
+import com.madeireira.erp.modules.compras.repository.PedidoCompraRepository;
+import com.madeireira.erp.modules.compras.service.ComprasService;
 import com.madeireira.erp.modules.estoque.dto.MovimentoEstoqueDTO;
 import com.madeireira.erp.modules.estoque.entity.TipoMovimento;
 import com.madeireira.erp.modules.estoque.service.EstoqueService;
@@ -45,9 +48,11 @@ public class FiscalService {
     private final FornecedorRepository fornecedorRepository;
     private final ClienteRepository clienteRepository;
     private final PedidoRepository pedidoRepository;
+    private final PedidoCompraRepository pedidoCompraRepository;
     private final ProdutoRepository produtoRepository;
     private final EstoqueService estoqueService;
     private final FinanceiroService financeiroService;
+    private final ComprasService comprasService;
 
     // -------------------------------------------------------------------------
     // Escrituração de Entrada
@@ -65,6 +70,13 @@ public class FiscalService {
                     req.getNumero(), req.getSerie()));
         }
 
+        PedidoCompra pedidoCompra = null;
+        if (req.getPedidoCompraId() != null) {
+            pedidoCompra = pedidoCompraRepository.findById(req.getPedidoCompraId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Pedido de compra não encontrado: " + req.getPedidoCompraId()));
+        }
+
         NotaFiscal nota = NotaFiscal.builder()
                 .tipo(TipoNF.ENTRADA)
                 .status(StatusNF.ESCRITURADA_MANUAL)
@@ -76,6 +88,7 @@ public class FiscalService {
                 .dataEntradaSaida(req.getDataEntradaSaida())
                 .naturezaOperacao(req.getNaturezaOperacao())
                 .fornecedor(fornecedor)
+                .pedidoCompra(pedidoCompra)
                 .valorFrete(orZero(req.getValorFrete()))
                 .valorSeguro(orZero(req.getValorSeguro()))
                 .valorDesconto(orZero(req.getValorDesconto()))
@@ -112,6 +125,11 @@ public class FiscalService {
                 .dataVencimento(salva.getDataEntradaSaida().plusDays(30))
                 .documento(salva.getNumero())
                 .build());
+
+        // Marca o pedido de compra vinculado como RECEBIDO
+        if (pedidoCompra != null) {
+            comprasService.marcarComoRecebido(pedidoCompra.getId());
+        }
 
         return toResponse(salva);
     }
@@ -177,8 +195,16 @@ public class FiscalService {
         // Estorno de estoque NÃO é feito automaticamente:
         // cancelamento fiscal é complexo e requer ajuste manual via
         // MovimentoEstoque para garantir rastreabilidade contábil.
+        PedidoCompra pedidoCompra = nota.getPedidoCompra();
         nota.setStatus(StatusNF.CANCELADA);
-        return toResponse(notaFiscalRepository.save(nota));
+        NotaFiscal salva = notaFiscalRepository.save(nota);
+
+        // Reverte o pedido de compra vinculado de RECEBIDO para CONFIRMADO
+        if (pedidoCompra != null && nota.getTipo() == TipoNF.ENTRADA) {
+            comprasService.reverterRecebimento(pedidoCompra.getId());
+        }
+
+        return toResponse(salva);
     }
 
     // -------------------------------------------------------------------------
@@ -319,6 +345,8 @@ public class FiscalService {
                 .clienteNome(n.getCliente() != null ? n.getCliente().getRazaoSocial() : null)
                 .pedidoId(n.getPedido() != null ? n.getPedido().getId() : null)
                 .pedidoNumero(n.getPedido() != null ? n.getPedido().getNumero() : null)
+                .pedidoCompraId(n.getPedidoCompra() != null ? n.getPedidoCompra().getId() : null)
+                .pedidoCompraNumero(n.getPedidoCompra() != null ? n.getPedidoCompra().getNumero() : null)
                 .valorProdutos(n.getValorProdutos())
                 .valorFrete(n.getValorFrete())
                 .valorSeguro(n.getValorSeguro())
@@ -364,6 +392,8 @@ public class FiscalService {
                 .dataEmissao(n.getDataEmissao())
                 .fornecedorNome(n.getFornecedor() != null ? n.getFornecedor().getRazaoSocial() : null)
                 .clienteNome(n.getCliente() != null ? n.getCliente().getRazaoSocial() : null)
+                .pedidoCompraId(n.getPedidoCompra() != null ? n.getPedidoCompra().getId() : null)
+                .pedidoCompraNumero(n.getPedidoCompra() != null ? n.getPedidoCompra().getNumero() : null)
                 .valorTotal(n.getValorTotal())
                 .totalItens(n.getItens().size())
                 .build();

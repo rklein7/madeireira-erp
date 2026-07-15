@@ -1,6 +1,7 @@
 package com.madeireira.erp.modules.fiscal.repository;
 
 import com.madeireira.erp.modules.fiscal.entity.NotaFiscal;
+import com.madeireira.erp.modules.fiscal.entity.StatusNF;
 import com.madeireira.erp.modules.fiscal.entity.TipoNF;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -16,6 +17,8 @@ public interface NotaFiscalRepository extends JpaRepository<NotaFiscal, UUID>,
         JpaSpecificationExecutor<NotaFiscal> {
 
     Optional<NotaFiscal> findByPedidoId(UUID pedidoId);
+
+    Optional<NotaFiscal> findByPedidoCompraIdAndStatusNot(UUID pedidoCompraId, StatusNF status);
 
     boolean existsByNumeroAndSerieAndTipoAndFornecedorId(
             String numero, String serie, TipoNF tipo, UUID fornecedorId);

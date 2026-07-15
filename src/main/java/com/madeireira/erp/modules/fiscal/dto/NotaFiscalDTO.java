@@ -85,6 +85,9 @@ public class NotaFiscalDTO {
 
         private String observacoes;
 
+        /** Opcional — vincula a NF de entrada a um pedido de compra existente */
+        private UUID pedidoCompraId;
+
         @NotNull(message = "Lista de itens é obrigatória")
         @NotEmpty(message = "A nota deve ter ao menos um item")
         @Valid
@@ -178,6 +181,9 @@ public class NotaFiscalDTO {
         private UUID pedidoId;
         private String pedidoNumero;
 
+        private UUID pedidoCompraId;
+        private String pedidoCompraNumero;
+
         private BigDecimal valorProdutos;
         private BigDecimal valorFrete;
         private BigDecimal valorSeguro;
@@ -209,6 +215,9 @@ public class NotaFiscalDTO {
         private LocalDate dataEmissao;
         private String fornecedorNome;
         private String clienteNome;
+
+        private UUID pedidoCompraId;
+        private String pedidoCompraNumero;
 
         private BigDecimal valorTotal;
         private int totalItens;

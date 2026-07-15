@@ -3,6 +3,7 @@ package com.madeireira.erp.modules.fiscal.entity;
 import com.madeireira.erp.modules.auth.entity.Usuario;
 import com.madeireira.erp.modules.cadastro.entity.Cliente;
 import com.madeireira.erp.modules.cadastro.entity.Fornecedor;
+import com.madeireira.erp.modules.compras.entity.PedidoCompra;
 import com.madeireira.erp.modules.vendas.entity.Pedido;
 import com.madeireira.erp.shared.BaseEntity;
 import jakarta.persistence.*;
@@ -61,6 +62,10 @@ public class NotaFiscal extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id")
     private Pedido pedido;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pedido_compra_id")
+    private PedidoCompra pedidoCompra;
 
     @Column(name = "valor_produtos", nullable = false, precision = 12, scale = 2)
     @Builder.Default
